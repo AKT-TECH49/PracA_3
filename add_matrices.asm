@@ -12,6 +12,7 @@
 ; rcx -> cols (int)
 ;and registers must be preserved across function calls
 ;rbx, r12, r13, r14, r15 ;push them on the stack 
+extern malloc
 
 
 section .data
@@ -21,9 +22,6 @@ section .data
 
 
 section .text
-    extern malloc
-    extern free
-    extern printf
     global addMatrices
 
 
@@ -32,6 +30,7 @@ addMatrices:
     ; push in
     push rbp
     mov rbp, rsp
+    
     push rbx
     push r12
     push r13
@@ -43,7 +42,7 @@ addMatrices:
     mov r14, rdx  
     mov r15, rcx 
 
-    ; nullity?
+    ; nullity/0?
     test r14, r14
     jz ._null
     test r15, r15
@@ -56,13 +55,16 @@ addMatrices:
     test rax, rax
     jz ._null
     mov rbx, rax  
+    ; save result matrix
     xor r8, r8  
     
     
 ._rows:
     mov rdi, r15
-    shl rdi, 2  
+    shl rdi, 2 
+    push r8 
     call malloc
+    pop r8
     test rax, rax
     jz ._null  ;else null
 
@@ -70,18 +72,19 @@ addMatrices:
     mov [rbx + r8 * 8], rax  ;pointer
     inc r8
     cmp r8, r14
+
     jl ._rows
     xor r8, r8  
 
 
-.add_rows:
+.addRows:
 
     xor r9, r9  
     mov rdi, [r12 + r8 * 8]  
     mov rsi, [r13 + r8 * 8]  
     mov rdx, [rbx + r8 * 8]  
     
-.add_cols:
+.addCols:
 
     movss xmm0, [rdi + r9 * 4]  
     addss xmm0, [rsi + r9 * 4] 
@@ -90,12 +93,12 @@ addMatrices:
     ;for cols
     inc r9
     cmp r9, r15
-    jl .add_cols
+    jl .addCols
 
     ;for rows
     inc r8
     cmp r8, r14
-    jl .add_rows
+    jl .addRows
 
     
     mov rax, rbx
